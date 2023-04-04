@@ -70,19 +70,59 @@ void free_hash_table(HashTable *ht) {
     free(ht);
 }
 
-void ht_insert(HashTable *ht, char *key, char *value) {
-    HT_Item *item = (HT_Item*)malloc(sizeof(HT_Item));
-    item->key = key;
-    item->value = value;
-
+void ht_set(HashTable *ht, char *key, char *value) {
+    HT_Item *new_item = create_ht_item(key, value);
     ht_hash hash_idx = hash_key(key, ht->size);
     if (ht->items[hash_idx] == NULL) {
-        ht->items[hash_idx] = create_ht_item(key, value);
+        ht->items[hash_idx] = new_item;
     } else {
-        // TODO: resolve collision
+        ht->items[hash_idx]->next = new_item;
+        new_item->prev = ht->items[hash_idx];
+        ht->items[hash_idx] = new_item;
     }
 
     ht->count++;
+}
+
+HT_Item* ht_search(HashTable *ht, char *key) {
+    ht_hash hash_idx = hash_key(key, ht->size);
+    HT_Item *item = ht->items[hash_idx];
+    if (item == NULL) {
+        return NULL;
+    }
+
+    HT_Item *cur_item = item;
+    while (cur_item != NULL) {
+        if (strcmp(key, cur_item->key) == 0) {
+            return cur_item;
+        }
+
+        cur_item = cur_item->prev;
+    }
+
+    return NULL;
+}
+
+void ht_delete(HashTable *ht, char *key) {
+    HT_Item *item = ht_search(ht, key);
+    if (item == NULL)
+        return;
+    
+    HT_Item *prev, *next;
+    prev = item->prev;
+    next = item->next;
+
+    if (next)
+        next->prev = prev;
+    if (prev)
+        prev->next = next;
+    if (next == NULL) {
+        ht_hash hash_idx = hash_key(item->key, ht->size);
+        ht->items[hash_idx] = prev;
+    }
+
+    item->prev = item->next = NULL;
+    ht->count--;
 }
 
 void ht_print(HashTable *ht) {
@@ -102,6 +142,14 @@ void ht_print(HashTable *ht) {
 }
 
 
+void show_item(HT_Item *item) {
+    if (item == NULL) {
+        printf("Item not found\n");
+    } else {
+        printf("Found item key: '%s' / value: '%s'\n", item->key, item->value);
+    }
+}
+
 int main(int argc, char **argv) {
     printf("Creating HashTable\n");
     HashTable *ht = create_hash_table(500);
@@ -113,8 +161,23 @@ int main(int argc, char **argv) {
     ht_hash hash2 = hash_key("Hello world", 500);
     printf("'Hello world' hash: %lu\n", hash2);
 
-    ht_insert(ht, "Hello", "World");
-    ht_insert(ht, "Foo", "Bar");
+    ht_set(ht, "Hello", "World");
+    ht_set(ht, "Foo", "Bar");
+    ht_print(ht);
+
+    printf("Searching 'Hello' key\n");
+    HT_Item *search_item = ht_search(ht, "Hello");
+    show_item(search_item);
+
+    printf("Searching 'Unknown' key\n");
+    search_item = ht_search(ht, "Unknown");
+    show_item(search_item);
+
+    ht_set(ht, "Qwe", "rty");
+    ht_print(ht);
+
+    printf("Deleting 'Qwe' item\n");
+    ht_delete(ht, "Qwe");
     ht_print(ht);
 
     free(ht);
