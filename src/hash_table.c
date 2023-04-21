@@ -221,7 +221,7 @@ void fill_hash_table(HashTable *ht, int key_count) {
     }
 }
 
-int main(int argc, char **argv) {
+void hash_table_test() {
     int hash_table_len = 500;
     srand((unsigned int)(time(NULL)/2));
 
@@ -264,5 +264,9 @@ int main(int argc, char **argv) {
     ht_print(ht);
 
     free(ht);
+}
+
+int main(int argc, char **argv) {
+    hash_table_test();
     return 0;
 }
